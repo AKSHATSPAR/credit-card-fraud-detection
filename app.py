@@ -241,9 +241,9 @@ with st.sidebar:
                           help="Lower = catch more fraud (higher recall), Higher = fewer false alarms (higher precision)")
     st.markdown("---")
     st.markdown("### 📊 Dataset Info")
-    st.metric("Total Transactions", f"{len(df):,}")
-    st.metric("Fraudulent", f"{len(df[df.Class == 1]):,}")
-    st.metric("Fraud Ratio", f"{len(df[df.Class == 1]) / len(df) * 100:.3f}%")
+    st.metric("Total Transactions", "284,807")
+    st.metric("Fraudulent", "492")
+    st.metric("Fraud Ratio", "0.173%")
 
 # ─── Threshold-adjusted metrics ───
 model = models[selected_model]
