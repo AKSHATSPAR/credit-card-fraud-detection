@@ -157,9 +157,10 @@ def load_and_train():
         # Load small test sample for Live Predictor only
         test_df = pd.read_csv('saved_models/test_sample.csv')
         X_test = test_df.drop('Class', axis=1).values
+        y_test_sample = test_df['Class'].values
 
         X_dummy = pd.DataFrame(columns=feature_names)
-        return test_df, X_dummy, X_test, y_test, models, results
+        return test_df, X_dummy, X_test, y_test, y_test_sample, models, results
 
     # --- Mode 2: Train from scratch (local with CSV) ---
     try:
@@ -221,11 +222,11 @@ def load_and_train():
             'y_pred': y_pred
         }
 
-    return df, X, X_test, y_test, models, results
+    return df, X, X_test, y_test, y_test.values, models, results
 
 # ─── Load Everything ───
 with st.spinner("🔄 Training ML Models on 284,807 transactions..."):
-    df, X, X_test, y_test, models, results = load_and_train()
+    df, X, X_test, y_test, y_test_sample, models, results = load_and_train()
 
 # ─── HERO HEADER ───
 st.markdown("""
@@ -250,7 +251,7 @@ with st.sidebar:
 
 # ─── Threshold-adjusted metrics ───
 model = models[selected_model]
-y_prob = model.predict_proba(X_test)[:, 1]
+y_prob = results[selected_model]['y_prob']
 y_pred_adj = (y_prob >= threshold).astype(int)
 
 prec = precision_score(y_test, y_pred_adj, zero_division=0)
@@ -351,7 +352,7 @@ with tab4:
 
     # Load real examples from the dataset
     X_test_df = pd.DataFrame(X_test, columns=X.columns)
-    y_test_arr = y_test.values
+    y_test_arr = y_test_sample
 
     fraud_indices = np.where(y_test_arr == 1)[0]
     legit_indices = np.where(y_test_arr == 0)[0]
@@ -456,7 +457,7 @@ with tab5:
     shap_model = models[shap_model_name]
 
     X_test_df_shap = pd.DataFrame(X_test, columns=X.columns)
-    y_test_arr_shap = y_test.values
+    y_test_arr_shap = y_test_sample
 
     shap_fraud_idx = np.where(y_test_arr_shap == 1)[0]
     shap_legit_idx = np.where(y_test_arr_shap == 0)[0]
