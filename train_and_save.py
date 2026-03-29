@@ -72,13 +72,15 @@ xgb = XGBClassifier(
 xgb.fit(X_train, y_train)
 models['XGBoost'] = xgb
 
-# --- Evaluate and print ---
+# --- Evaluate, save predictions, and print ---
 print("\n" + "="*60)
 print("MODEL PERFORMANCE SUMMARY")
 print("="*60)
+all_probs = {}
 for name, model in models.items():
     y_pred = model.predict(X_test)
     y_prob = model.predict_proba(X_test)[:, 1]
+    all_probs[name] = y_prob
     print(f"\n{name}:")
     print(f"  Precision: {precision_score(y_test, y_pred):.3f}")
     print(f"  Recall:    {recall_score(y_test, y_pred):.3f}")
@@ -95,11 +97,21 @@ for name, model in models.items():
 joblib.dump(scaler, os.path.join(OUTPUT_DIR, "scaler.joblib"))
 print("  Saved scaler")
 
-# Save test data (small sample for live predictor)
-test_sample = pd.DataFrame(X_test, columns=feature_names)
-test_sample['Class'] = y_test.values
+# Save FULL test set y_test and y_probs (for accurate metric computation on cloud)
+np.save(os.path.join(OUTPUT_DIR, "y_test_full.npy"), y_test.values)
+probs_dict = {name: prob.tolist() for name, prob in all_probs.items()}
+with open(os.path.join(OUTPUT_DIR, "y_probs_full.json"), 'w') as f:
+    json.dump(probs_dict, f)
+print(f"  Saved full test predictions (y_test: {len(y_test)}, probs for {len(all_probs)} models)")
+
+# Save SMALL test sample (for Live Predictor feature loading only)
+test_full = pd.DataFrame(X_test, columns=feature_names)
+test_full['Class'] = y_test.values
+fraud_rows = test_full[test_full['Class'] == 1]
+legit_rows = test_full[test_full['Class'] == 0].sample(n=2000, random_state=42)
+test_sample = pd.concat([fraud_rows, legit_rows]).sample(frac=1, random_state=42)
 test_sample.to_csv(os.path.join(OUTPUT_DIR, "test_sample.csv"), index=False)
-print(f"  Saved test_sample.csv ({len(test_sample)} rows)")
+print(f"  Saved test_sample.csv ({len(test_sample)} rows for Live Predictor)")
 
 # Save feature names
 with open(os.path.join(OUTPUT_DIR, "feature_names.json"), 'w') as f:

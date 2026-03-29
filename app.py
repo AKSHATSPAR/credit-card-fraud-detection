@@ -132,18 +132,19 @@ def load_and_train():
             if os.path.exists(path):
                 models[name] = joblib.load(path)
 
-        test_df = pd.read_csv('saved_models/test_sample.csv')
-        y_test = test_df['Class']
-        X_test = test_df.drop('Class', axis=1).values
-
         with open('saved_models/feature_names.json') as f:
             feature_names = json.load(f)
-        X_columns = pd.Index(feature_names)
 
+        # Load FULL test set predictions for accurate metrics
+        y_test_full = np.load('saved_models/y_test_full.npy')
+        with open('saved_models/y_probs_full.json') as f:
+            probs_full = json.load(f)
+
+        y_test = pd.Series(y_test_full)
         results = {}
-        for name, model in models.items():
-            y_pred = model.predict(X_test)
-            y_prob = model.predict_proba(X_test)[:, 1]
+        for name in models:
+            y_prob = np.array(probs_full[name])
+            y_pred = (y_prob >= 0.5).astype(int)
             results[name] = {
                 'Precision': precision_score(y_test, y_pred),
                 'Recall': recall_score(y_test, y_pred),
@@ -153,10 +154,12 @@ def load_and_train():
                 'y_pred': y_pred
             }
 
-        # Create a dummy df/X for compatibility (X.columns must work)
-        df = test_df
+        # Load small test sample for Live Predictor only
+        test_df = pd.read_csv('saved_models/test_sample.csv')
+        X_test = test_df.drop('Class', axis=1).values
+
         X_dummy = pd.DataFrame(columns=feature_names)
-        return df, X_dummy, X_test, y_test, models, results
+        return test_df, X_dummy, X_test, y_test, models, results
 
     # --- Mode 2: Train from scratch (local with CSV) ---
     try:
