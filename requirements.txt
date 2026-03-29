@@ -3,11 +3,6 @@ scikit-learn
 imbalanced-learn
 matplotlib
 seaborn
-fpdf2
-jupyter
 xgboost
 shap
-fastapi
-uvicorn
 joblib
-streamlit
