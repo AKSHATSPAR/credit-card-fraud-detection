@@ -153,9 +153,10 @@ def load_and_train():
                 'y_pred': y_pred
             }
 
-        # Create a dummy df for compatibility
+        # Create a dummy df/X for compatibility (X.columns must work)
         df = test_df
-        return df, X_columns, X_test, y_test, models, results
+        X_dummy = pd.DataFrame(columns=feature_names)
+        return df, X_dummy, X_test, y_test, models, results
 
     # --- Mode 2: Train from scratch (local with CSV) ---
     try:
